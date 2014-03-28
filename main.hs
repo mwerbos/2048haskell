@@ -10,7 +10,7 @@ import Control.Lens -- for set, element
 --TODO:
 --loss detection
 --scoring
---figure out issue with repeat running???
+--animations (major!)
 -------------------------------------------
 
 main = 
@@ -83,10 +83,10 @@ addTwos (board,gen) = let numZeros = (sum . (map toInt) . (map (==0)) . concat) 
 -- -----------------------------------------
 
 handleInputEvents :: Event -> World -> World
-handleInputEvents (EventKey (SpecialKey KeyUp) _ _ _) (board,gen) = addTwos (goUp board, gen)
-handleInputEvents (EventKey (SpecialKey KeyDown) _ _ _) (board,gen) = addTwos (goDown board, gen)
-handleInputEvents (EventKey (SpecialKey KeyLeft) _ _ _) (board,gen) = addTwos (goLeft board, gen) 
-handleInputEvents (EventKey (SpecialKey KeyRight) _ _ _) (board,gen) = addTwos (goRight board, gen)
+handleInputEvents (EventKey (SpecialKey KeyUp) Down _ _) (board,gen) = addTwos (goUp board, gen)
+handleInputEvents (EventKey (SpecialKey KeyDown) Down _ _) (board,gen) = addTwos (goDown board, gen)
+handleInputEvents (EventKey (SpecialKey KeyLeft) Down _ _) (board,gen) = addTwos (goLeft board, gen) 
+handleInputEvents (EventKey (SpecialKey KeyRight) Down _ _) (board,gen) = addTwos (goRight board, gen)
 handleInputEvents  _ x = x
 
 stepWorld :: Float -> World -> World
