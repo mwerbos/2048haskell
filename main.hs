@@ -11,6 +11,7 @@ import Control.Lens -- for set, element
 --loss detection
 --scoring
 --animations (major!)
+--make 4s spawn sometimes
 -------------------------------------------
 
 main = 
@@ -76,24 +77,22 @@ addTwo (board,gen) = let numZeros = (sum . (map toInt) . (map (==0)) . concat) b
 ---------------------------------------------
 -- Input handling
 -- -----------------------------------------
+--
+data Direction = U | D | L | R
+
+keyDir :: Key -> Maybe Direction
+keyDir (SpecialKey KeyUp) = Just U
+keyDir (SpecialKey KeyDown) = Just D
+keyDir (SpecialKey KeyLeft) = Just L
+keyDir (SpecialKey KeyRight) = Just R
+keyDir _ = Nothing
 
 handleInputEvents :: Event -> World -> World
-handleInputEvents (EventKey (SpecialKey KeyUp) Down _ _) (board,gen) = let newBoard = goUp board
-                                                                       in if newBoard == board 
-                                                                          then (board,gen)
-                                                                          else addTwo (newBoard, gen)
-handleInputEvents (EventKey (SpecialKey KeyDown) Down _ _) (board,gen) = let newBoard = goDown board
-                                                                          in if newBoard == board 
-                                                                          then (board,gen)
-                                                                          else addTwo (newBoard, gen)  
-handleInputEvents (EventKey (SpecialKey KeyLeft) Down _ _) (board,gen) = let newBoard = goLeft board
-                                                                         in if newBoard == board 
-                                                                          then (board,gen)
-                                                                          else addTwo (newBoard, gen)
-handleInputEvents (EventKey (SpecialKey KeyRight) Down _ _) (board,gen) = let newBoard = goRight board
-                                                                          in if newBoard == board 
-                                                                          then (board,gen)
-                                                                          else addTwo (newBoard, gen)
+handleInputEvents (EventKey k Down _ _) (board,gen) = let dir = keyDir k
+                                                          newBoard = go dir board
+                                                      in if newBoard == board 
+                                                         then (board,gen)
+                                                         else addTwo (newBoard, gen)
 handleInputEvents  _ x = x
 
 stepWorld :: Float -> World -> World
@@ -153,6 +152,7 @@ drawRow [i,j,k,l] = translate (-300) 0 (pictures [ drawTile 0 i,
 ------------------------------
 
 
+
 scootLambda :: Int -> [Int] -> [Int]
 scootLambda y [] = [y]
 scootLambda y [x] = if x == 0 then [x,y] else [y,x]
@@ -171,9 +171,12 @@ scootRowRight = scootRowRightOnce . scootRowRightOnce . scootRowRightOnce
 scootRight :: [[Int]] -> [[Int]]
 scootRight = map scootRowRight
 
-scootLeft = transpose . reverse . transpose . scootRight . transpose . reverse . transpose
-scootDown = transpose . scootRight . transpose
-scootUp = reverse . transpose . scootRight . transpose . reverse
+scoot :: Maybe Direction -> [[Int]] -> [[Int]]
+scoot Nothing = id
+scoot (Just R) = scootRight
+scoot (Just U) = reverse . transpose . scootRight . transpose . reverse
+scoot (Just L) = transpose . reverse . transpose . scootRight . transpose . reverse . transpose
+scoot (Just D) = transpose . scootRight . transpose
 
 --------------------------------------------
 -- Comboing (TODO: REFACTOR)              --
@@ -193,13 +196,15 @@ comboRowRight = foldr comboLambda []
 comboRight :: [[Int]] -> [[Int]]
 comboRight = map comboRowRight
 
-comboLeft = transpose . reverse . transpose . comboRight . transpose . reverse . transpose
-comboDown = transpose . comboRight . transpose
-comboUp = reverse . transpose . comboRight . transpose . reverse
+combo :: Maybe Direction -> [[Int]] -> [[Int]]
+combo Nothing = id
+combo (Just R) = comboRight
+combo (Just U) = reverse . transpose . comboRight . transpose . reverse
+combo (Just L) = transpose . reverse . transpose . comboRight . transpose . reverse . transpose
+combo (Just D) = transpose . comboRight . transpose
 
--- TODO This could DEFINITELY be more clean.
-goRight = scootRight . comboRight . scootRight
-goLeft = scootLeft . comboLeft . scootLeft
-goDown = scootDown . comboDown . scootDown
-goUp = scootUp . comboUp . scootUp
+-- !! Now actually go in the direction!!
+
+go :: Maybe Direction -> [[Int]] -> [[Int]]
+go dir = (scoot dir) . (combo dir) . (scoot dir)
 
