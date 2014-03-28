@@ -1,10 +1,10 @@
 import Graphics.Gloss
 import Graphics.Gloss.Data.Color
 import Graphics.Gloss.Interface.IO.Game
-import Data.List -- for transpose and reverse
-import Data.List.Split -- for chunksOf (Could also use prelude and roll my own)
-import System.Random -- for getStdGen, using StdGen objects and random
-import Control.Lens -- for set, element
+import Data.List (transpose,reverse)
+import Data.List.Split (chunksOf)
+import System.Random (StdGen,getStdGen,random,randoms)
+import Control.Lens (set,element)
 
 --------------------------------------------
 --TODO:
@@ -19,7 +19,7 @@ main =
     g <- getStdGen
     play
       (InWindow "2048 in Haskell by Maia"
-         (400,500)
+         (410,500)
          (20,20)
       )
       black -- background color
