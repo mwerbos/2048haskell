@@ -19,7 +19,7 @@ main =
     g <- getStdGen
     play
       (InWindow "2048 in Haskell by Maia"
-         (400,400)
+         (400,500)
          (20,20)
       )
       black -- background color
