@@ -28,7 +28,7 @@ main =
       handleInputEvents -- TODO add randomness
       stepWorld
 
-fps = 2
+fps = 20
 
 -- World is a 4x4 double array of ints
 type Row = [Int]
@@ -59,23 +59,18 @@ toInt False = 0
 initPositions :: StdGen -> World
 -- This is a really cool line of code but sadly it is no longer useful.
 -- initPositions gen = let board = chunksOf 4 $ map ((*2) . toInt . (== 0) . (`mod` 4)) $ take 16 $ (randoms gen :: [Int]) in (board,gen)
-initPositions gen = let numZeros = 16
-                        (rand1, gen1) = random gen :: (Int, StdGen)
-                        (rand2, gen2) = random gen :: (Int, StdGen)
-                        n1 = rand1 `mod` numZeros
-                        n2 = rand2 `mod` (numZeros-1)
-                        newBoard = chunksOf 4 $ makeNthZeroTwo n2 $ makeNthZeroTwo n1 $ replicate 16  0
-                    in (newBoard, gen2)
+initPositions gen = let origBoard = chunksOf 4 $ replicate 16 0
+                    in addTwo $ addTwo (origBoard,gen)
 
 --------------------------------------------
 -- Regeneration of 2s
 --------------------------------------------
 
-addTwos :: World -> World
-addTwos (board,gen) = let numZeros = (sum . (map toInt) . (map (==0)) . concat) board
-                          (rand, newGen) = random gen :: (Int, StdGen)
-                          n = if numZeros == 0 then 0 else rand `mod` numZeros
-                          newBoard = chunksOf 4 $ makeNthZeroTwo n $ concat board
+addTwo :: World -> World
+addTwo (board,gen) = let numZeros = (sum . (map toInt) . (map (==0)) . concat) board
+                         (rand, newGen) = random gen :: (Int, StdGen)
+                         n = if numZeros == 0 then 0 else rand `mod` numZeros
+                         newBoard = chunksOf 4 $ makeNthZeroTwo n $ concat board
                       in (newBoard, newGen)
 
 ---------------------------------------------
@@ -83,10 +78,22 @@ addTwos (board,gen) = let numZeros = (sum . (map toInt) . (map (==0)) . concat) 
 -- -----------------------------------------
 
 handleInputEvents :: Event -> World -> World
-handleInputEvents (EventKey (SpecialKey KeyUp) Down _ _) (board,gen) = addTwos (goUp board, gen)
-handleInputEvents (EventKey (SpecialKey KeyDown) Down _ _) (board,gen) = addTwos (goDown board, gen)
-handleInputEvents (EventKey (SpecialKey KeyLeft) Down _ _) (board,gen) = addTwos (goLeft board, gen) 
-handleInputEvents (EventKey (SpecialKey KeyRight) Down _ _) (board,gen) = addTwos (goRight board, gen)
+handleInputEvents (EventKey (SpecialKey KeyUp) Down _ _) (board,gen) = let newBoard = goUp board
+                                                                       in if newBoard == board 
+                                                                          then (board,gen)
+                                                                          else addTwo (newBoard, gen)
+handleInputEvents (EventKey (SpecialKey KeyDown) Down _ _) (board,gen) = let newBoard = goDown board
+                                                                          in if newBoard == board 
+                                                                          then (board,gen)
+                                                                          else addTwo (newBoard, gen)  
+handleInputEvents (EventKey (SpecialKey KeyLeft) Down _ _) (board,gen) = let newBoard = goLeft board
+                                                                         in if newBoard == board 
+                                                                          then (board,gen)
+                                                                          else addTwo (newBoard, gen)
+handleInputEvents (EventKey (SpecialKey KeyRight) Down _ _) (board,gen) = let newBoard = goRight board
+                                                                          in if newBoard == board 
+                                                                          then (board,gen)
+                                                                          else addTwo (newBoard, gen)
 handleInputEvents  _ x = x
 
 stepWorld :: Float -> World -> World
