@@ -6,6 +6,13 @@ import Data.List.Split -- for chunksOf (Could also use prelude and roll my own)
 import System.Random -- for getStdGen, using StdGen objects and random
 import Control.Lens -- for set, element
 
+--------------------------------------------
+--TODO:
+--loss detection
+--scoring
+--figure out issue with repeat running???
+-------------------------------------------
+
 main = 
   do
     g <- getStdGen
@@ -21,7 +28,7 @@ main =
       handleInputEvents -- TODO add randomness
       stepWorld
 
-fps = 20
+fps = 2
 
 -- World is a 4x4 double array of ints
 type Row = [Int]
@@ -98,13 +105,17 @@ tileS = 90
 textScale = 0.2
 
 colorZipper :: [(Int, Color)]
-colorZipper = [(2, makeColor8 255 235 235 255),
-               (4, makeColor8 255 200 200 255),
-               (8, makeColor8 255 170 170 255),
-               (16, makeColor8 255 140 140 255),
-               (32, makeColor8 255 110 110 255),
-               (64, makeColor8 255 80 80 255),
-               (128, makeColor8 255 80 255 255)]
+colorZipper = [(2,    makeColor8 255 235 235 255),
+               (4,    makeColor8 255 200 200 255),
+               (8,    makeColor8 255 170 170 255),
+               (16,   makeColor8 255 140 140 255),
+               (32,   makeColor8 255 110 110 255),
+               (64,   makeColor8 255  80  80 255),
+               (128,  makeColor8 255 230  90 255),
+               (256,  makeColor8 255 230  90 255),
+               (512,  makeColor8 255 230  90 255),
+               (1024, makeColor8 255 230  90 255),
+               (2048, makeColor8 255 235  90 255)]
 
 getColorUnsafe :: Int -> Maybe Color
 getColorUnsafe x = lookup x colorZipper 
@@ -129,11 +140,6 @@ drawRow [i,j,k,l] = translate (-300) 0 (pictures [ drawTile 0 i,
                                                    drawTile rowHgt j,
                                                    drawTile (rowHgt*2) k,
                                                    drawTile (rowHgt*3) l ])
-
--- TODO fix drawRow to actually draw integers and corresponding colors
--- then write combination functions
--- then write input handlers
--- then write score tracker
 
 ------------------------------
 -- Board handling ------------
@@ -173,12 +179,8 @@ comboLambda y (x:xs) = if x == y then 0:x+y:xs else y:x:xs
 
 -- Takes a row and scoots all numbers through zeroes *once*
 -- Example: [2,0,0,2] -> [0,2,0,2] and [0,2,0,2] -> [0,0,2,2]
-comboRowRightOnce :: [Int] -> [Int]
-comboRowRightOnce = foldr comboLambda []
-
--- does scootRight three times
 comboRowRight :: [Int] -> [Int]
-comboRowRight = comboRowRightOnce . comboRowRightOnce . comboRowRightOnce
+comboRowRight = foldr comboLambda []
 
 -- scoots whole board
 comboRight :: [[Int]] -> [[Int]]
@@ -188,7 +190,7 @@ comboLeft = transpose . reverse . transpose . comboRight . transpose . reverse .
 comboDown = transpose . comboRight . transpose
 comboUp = reverse . transpose . comboRight . transpose . reverse
 
--- This could DEFINITELY be more clean.
+-- TODO This could DEFINITELY be more clean.
 goRight = scootRight . comboRight . scootRight
 goLeft = scootLeft . comboLeft . scootLeft
 goDown = scootDown . comboDown . scootDown
