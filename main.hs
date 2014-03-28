@@ -32,7 +32,7 @@ main =
 fps = 20
 
 -- type World = ([[Int]],StdGen) -- also stores random number generator to help with some stuff
-data Tile = Tile { val :: Int, popInTime :: Float, popOutTime :: Float} deriving (Eq)
+data Tile = Tile { val :: Int, popInTime :: Float, popOutTime :: Float} deriving (Eq,Show)
 type Row = [Tile]
 data World = World {board :: [[Tile]], gen :: StdGen}
 
@@ -109,8 +109,8 @@ handleInputEvents :: Event -> World -> World
 handleInputEvents (EventKey k Down _ _) world = let dir = keyDir k
                                                     newBoard = go dir (board world)
                                                 in if newBoard == (board world) -- NOTE watch out if it's testing equality of popin and popout times??
-                                                   then world
-                                                   else addTwo world
+                                                   then world {board=newBoard}
+                                                   else addTwo world {board=newBoard}
 handleInputEvents  _ x = x
 
 stepWorld :: Float -> World -> World
@@ -179,24 +179,24 @@ drawRow [i,j,k,l] = translate (-300) 0 (pictures [ drawTile 0 i,
 
 
 
-scootLambda :: Int -> [Int] -> [Int]
+scootLambda :: Tile -> [Tile] -> [Tile]
 scootLambda y [] = [y]
-scootLambda y [x] = if x == 0 then [x,y] else [y,x]
-scootLambda y (x:xs) = if x == 0 then x:y:xs else y:x:xs
+scootLambda y [x] = if val x == 0 then [x,y] else [y,x] -- TODO add animations
+scootLambda y (x:xs) = if val x == 0 then x:y:xs else y:x:xs
 
 -- Takes a row and scoots all numbers through zeroes *once*
 -- Example: [2,0,0,2] -> [0,2,0,2] and [0,2,0,2] -> [0,0,2,2] scootRowRightOnce :: [Int] -> [Int]
 scootRowRightOnce = foldr scootLambda []
 
 -- does scootRight three times
-scootRowRight :: [Int] -> [Int]
+scootRowRight :: [Tile] -> [Tile]
 scootRowRight = scootRowRightOnce . scootRowRightOnce . scootRowRightOnce
 
 -- scoots whole board
-scootRight :: [[Int]] -> [[Int]]
+scootRight :: [[Tile]] -> [[Tile]]
 scootRight = map scootRowRight
 
-scoot :: Maybe Direction -> [[Int]] -> [[Int]]
+scoot :: Maybe Direction -> [[Tile]] -> [[Tile]]
 scoot Nothing = id
 scoot (Just R) = scootRight
 scoot (Just U) = reverse . transpose . scootRight . transpose . reverse
@@ -207,21 +207,21 @@ scoot (Just D) = transpose . scootRight . transpose
 -- Comboing (TODO: REFACTOR)              --
 --------------------------------------------
 
-comboLambda :: Int -> [Int] -> [Int]
+comboLambda :: Tile -> [Tile] -> [Tile]
 comboLambda y [] = [y]
-comboLambda y [x] = if x == y then [0,x+y] else [y,x]
-comboLambda y (x:xs) = if x == y then 0:x+y:xs else y:x:xs
+comboLambda y [x] = if val x == val y then [makeTile 0,makeTile $ val x + val y] else [y,x] -- TODO animations
+comboLambda y (x:xs) = if val x == val y then (makeTile 0):(makeTile $ val x+val y):xs else y:x:xs
 
 -- Takes a row and scoots all numbers through zeroes *once*
 -- Example: [2,0,0,2] -> [0,2,0,2] and [0,2,0,2] -> [0,0,2,2]
-comboRowRight :: [Int] -> [Int]
+comboRowRight :: [Tile] -> [Tile]
 comboRowRight = foldr comboLambda []
 
 -- scoots whole board
-comboRight :: [[Int]] -> [[Int]]
+comboRight :: [[Tile]] -> [[Tile]]
 comboRight = map comboRowRight
 
-combo :: Maybe Direction -> [[Int]] -> [[Int]]
+combo :: Maybe Direction -> [[Tile]] -> [[Tile]]
 combo Nothing = id
 combo (Just R) = comboRight
 combo (Just U) = reverse . transpose . comboRight . transpose . reverse
@@ -230,9 +230,5 @@ combo (Just D) = transpose . comboRight . transpose
 
 -- !! Now actually go in the direction!!
 
--- todo: make this on Tiles instead of Ints
-goInt :: Maybe Direction -> [[Int]] -> [[Int]]
-goInt dir = (scoot dir) . (combo dir) . (scoot dir)
-
 go :: Maybe Direction -> [[Tile]] -> [[Tile]]
-go dir tss = (setValss tss . (goInt dir) . chunksOf 4 . map val . concat) tss
+go dir = (scoot dir) . (combo dir) . (scoot dir)
