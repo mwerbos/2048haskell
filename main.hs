@@ -115,10 +115,13 @@ handleInputEvents  _ x = x
 -- Time steps: All they do is update the animations   --
 -- -----------------------------------------------------
 
+popInSpeed = 8
+popOutSpeed = 1
+
 -- changes animation times for each tile
 updateTile :: Float -> Tile -> Tile
-updateTile dt t = t {popInTime = if popInTime t > 0 then popInTime t - dt else 0,
-                     popOutTime = if popOutTime t > 0 then popOutTime t - dt else 0}
+updateTile dt t = t {popInTime = if popInTime t - dt*popInSpeed > 0 then popInTime t - dt*popInSpeed else 0,
+                     popOutTime = if popOutTime t - dt*popInSpeed > 0 then popOutTime t - dt*popInSpeed else 0}
 
 updateTiles :: Float -> [[Tile]] -> [[Tile]]
 updateTiles dt tss = (map (map (updateTile dt))) tss
@@ -169,17 +172,14 @@ getColor x = convertColor (getColorUnsafe x)
 drawTileBack :: Float -> Picture
 drawTileBack x = color white (translate x 0 (rectangleSolid tileS tileS))
 
-popInSpeed = 2
-popOutSpeed = 1
-
 -- Takes x-offset and tile and draws the tile itself
 drawTile :: Float -> Tile -> Picture
-drawTile x tile = let background = [color (getColor $ val tile) $ translate x 0 $ rectangleSolid tileS tileS]
+drawTile x tile = let background = [color (getColor $ val tile) $ rectangleSolid tileS tileS]
                       number = if val tile > 0 then [scale textScale textScale $ text $ show $ val tile]
                                         else []
                       curScale = if (popInTime tile) > 0
-                                 then (1-(popInTime tile)*popInSpeed) 
-                                 else (1+(popOutTime tile)*popOutSpeed)
+                                 then (1-(popInTime tile))
+                                 else (1+(popOutTime tile))
                   in pictures 
                      [ drawTileBack x,
                        scale curScale curScale $ translate x 0 $ pictures $ background ++ number]
