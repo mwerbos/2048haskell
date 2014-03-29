@@ -52,17 +52,6 @@ setVals ts is = zipWith setVal ts is
 setValss :: [[Tile]] -> [[Int]] -> [[Tile]]
 setValss tss iss = zipWith setVals tss iss
 
-makeNthZeroTwo :: Int -> [Int] -> [Int]
-makeNthZeroTwo _ [] = []
-makeNthZeroTwo 0 (x:xs) = if x == 0 then 2:xs else x:(makeNthZeroTwo 0 xs)
-makeNthZeroTwo n (x:xs) = if x == 0 then x:(makeNthZeroTwo (n-1) xs) 
-                                  else x:(makeNthZeroTwo n xs)
-
-addNthZero :: Int -> World -> World
--- only modifies the board, nothing else
-addNthZero n world = let concatWorld = concat (board world)
-             in world {board = chunksOf 4 $ setVals concatWorld $ makeNthZeroTwo n $ map val $ concatWorld }
-
 ---------------------------------------------
 -- Initial world generation
 ---------------------------------------------
@@ -85,11 +74,19 @@ initPositions g = let origBoard = chunksOf 4 $ map makeTile $ replicate 16 0
 -- Regeneration of 2s
 --------------------------------------------
 
+makeNthZeroTwo :: Int -> [Tile] -> [Tile]
+makeNthZeroTwo _ [] = []
+makeNthZeroTwo 0 (x:xs) = if val x == 0 
+                          then (Tile {val=2, popInTime = 0.5, popOutTime = 0.0}:xs 
+                          else x:(makeNthZeroTwo 0 xs)
+makeNthZeroTwo n (x:xs) = if val x == 0 then x:(makeNthZeroTwo (n-1) xs) 
+                                  else x:(makeNthZeroTwo n xs)
+
 addTwo :: World -> World
 addTwo world = let numZeros = (sum . (map toInt) . (map (==0)) . map val . concat) (board world)
                    (rand, newGen) = random (gen world) :: (Int, StdGen)
                    n = if numZeros == 0 then 0 else rand `mod` numZeros
-                   newBoard = chunksOf 4 $ setVals (concat (board world)) $ makeNthZeroTwo n $ map val $ concat (board world)
+                   newBoard = chunksOf 4 $ makeNthZeroTwo n $ concat (board world)
                 in world {board=newBoard, gen=newGen}
 
 ---------------------------------------------
@@ -108,13 +105,30 @@ keyDir _ = Nothing
 handleInputEvents :: Event -> World -> World
 handleInputEvents (EventKey k Down _ _) world = let dir = keyDir k
                                                     newBoard = go dir (board world)
-                                                in if newBoard == (board world) -- NOTE watch out if it's testing equality of popin and popout times??
+                                       -- NOTE watch out if it's testing equality of popin and popout times??
+                                                in if newBoard == (board world)
                                                    then world {board=newBoard}
                                                    else addTwo world {board=newBoard}
 handleInputEvents  _ x = x
 
+--------------------------------------------------------
+-- Time steps: All they do is update the animations   --
+-- -----------------------------------------------------
+
+-- changes animation times for each tile
+updateTile :: Float -> Tile -> Tile
+updateTile dt t = t {popInTime = if popInTime t > 0 then popInTime t - dt else 0,
+                     popOutTime = if popOutTime t > 0 then popOutTime t - dt else 0}
+
+updateTiles :: Float -> [[Tile]] -> [[Tile]]
+updateTiles dt tss = (map (map (updateTile dt))) tss
+
 stepWorld :: Float -> World -> World
-stepWorld _ x = x
+stepWorld dt world = world {board=updateTiles dt (board world)}
+
+---------------------------------------------------------
+--  Drawing and display
+---------------------------------------------------------
 
 rowHgt = 100
 
@@ -173,9 +187,9 @@ drawRow [i,j,k,l] = translate (-300) 0 (pictures [ drawTile 0 i,
                                                    drawTile (rowHgt*2) k,
                                                    drawTile (rowHgt*3) l ])
 
-------------------------------
--- Board handling ------------
-------------------------------
+--------------------------------------------
+-- Board handling (moving and stuff)      --
+--------------------------------------------
 
 
 
@@ -209,7 +223,9 @@ scoot (Just D) = transpose . scootRight . transpose
 
 comboLambda :: Tile -> [Tile] -> [Tile]
 comboLambda y [] = [y]
-comboLambda y [x] = if val x == val y then [makeTile 0,makeTile $ val x + val y] else [y,x] -- TODO animations
+comboLambda y [x] = if val x == val y 
+                    then [makeTile 0,Tile {val=val x + val y, popOutTime = 0.1, popInTime = 0}] 
+                    else [y,x] -- TODO animations
 comboLambda y (x:xs) = if val x == val y then (makeTile 0):(makeTile $ val x+val y):xs else y:x:xs
 
 -- Takes a row and scoots all numbers through zeroes *once*
