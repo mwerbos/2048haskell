@@ -77,7 +77,7 @@ initPositions g = let origBoard = chunksOf 4 $ map makeTile $ replicate 16 0
 makeNthZeroTwo :: Int -> [Tile] -> [Tile]
 makeNthZeroTwo _ [] = []
 makeNthZeroTwo 0 (x:xs) = if val x == 0 
-                          then (Tile {val=2, popInTime = 0.5, popOutTime = 0.0}:xs 
+                          then (Tile {val=2, popInTime = 0.5, popOutTime = 0.0}:xs)
                           else x:(makeNthZeroTwo 0 xs)
 makeNthZeroTwo n (x:xs) = if val x == 0 then x:(makeNthZeroTwo (n-1) xs) 
                                   else x:(makeNthZeroTwo n xs)
@@ -165,21 +165,22 @@ convertColor Nothing = makeColor8 255 255 255 255
 getColor :: Int -> Color
 getColor x = convertColor (getColorUnsafe x)
 
--- Takes x-offset and tile value and draws the tile
-drawTileBack :: Float -> Int -> Picture
-drawTileBack x val = color white (translate x 0 (rectangleSolid tileS tileS))
+-- Takes x-offset and draws the tile background
+drawTileBack :: Float -> Picture
+drawTileBack x = color white (translate x 0 (rectangleSolid tileS tileS))
 
--- Draws the tile including its animation stuff
+popInSpeed = 2
+popOutSpeed = 1
+
+-- Takes x-offset and tile and draws the tile itself
 drawTile :: Float -> Tile -> Picture
-drawTile x tile = let v = val tile
-                      background = [color (getColor v) (translate x 0 (rectangleSolid tileS tileS))]
-                      number = if v > 0 then  -- only display the number if it isn't 0
-                                  [translate x 0 (scale textScale textScale (text (show v)))]
-                                 else [] :: [Picture]
-                      poppingIn = (popInTime tile) > 0
-                      poppingOut = (popOutTime tile) > 0
-                      curScale = if poppingIn then (1-popInTime tile) else (1+popOutTime tile)
-         in scale curScale curScale (pictures (background ++ number))
+drawTile x tile = let background = [color (getColor $ val tile) $ translate x 0 $ rectangleSolid tileS tileS]
+                      number = if val tile > 0 then [scale textScale textScale $ text $ show $ val tile]
+                                        else []
+                      curScale = if (popInTime tile) > 0
+                                 then (1-(popInTime tile)*popInSpeed) 
+                                 else (1+(popOutTime tile)*popOutSpeed)
+                  in scale curScale curScale $ translate x 0 $ pictures $ background ++ number
 
 drawRow :: Row -> Picture
 drawRow [i,j,k,l] = translate (-300) 0 (pictures [ drawTile 0 i, 
