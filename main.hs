@@ -180,7 +180,9 @@ drawTile x tile = let background = [color (getColor $ val tile) $ translate x 0 
                       curScale = if (popInTime tile) > 0
                                  then (1-(popInTime tile)*popInSpeed) 
                                  else (1+(popOutTime tile)*popOutSpeed)
-                  in scale curScale curScale $ translate x 0 $ pictures $ background ++ number
+                  in pictures 
+                     [ drawTileBack x,
+                       scale curScale curScale $ translate x 0 $ pictures $ background ++ number]
 
 drawRow :: Row -> Picture
 drawRow [i,j,k,l] = translate (-300) 0 (pictures [ drawTile 0 i, 
