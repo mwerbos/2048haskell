@@ -115,7 +115,7 @@ handleInputEvents  _ x = x
 -- Time steps: All they do is update the animations   --
 -- -----------------------------------------------------
 
-popInSpeed = 8
+popInSpeed = 2
 popOutSpeed = 1
 
 -- changes animation times for each tile
@@ -169,6 +169,7 @@ getColor :: Int -> Color
 getColor x = convertColor (getColorUnsafe x)
 
 -- Takes x-offset and draws the tile background
+-- maybe unroll this into drawTile?
 drawTileBack :: Float -> Picture
 drawTileBack x = color white (translate x 0 (rectangleSolid tileS tileS))
 
@@ -182,7 +183,7 @@ drawTile x tile = let background = [color (getColor $ val tile) $ rectangleSolid
                                  else (1+(popOutTime tile))
                   in pictures 
                      [ drawTileBack x,
-                       scale curScale curScale $ translate x 0 $ pictures $ background ++ number]
+                       translate x 0 $ scale curScale curScale $ pictures $ background ++ number]
 
 drawRow :: Row -> Picture
 drawRow [i,j,k,l] = translate (-300) 0 (pictures [ drawTile 0 i, 
