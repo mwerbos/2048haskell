@@ -148,17 +148,17 @@ tileS = 90
 textScale = 0.2
 
 colorZipper :: [(Int, Color)]
-colorZipper = [(2,    makeColor8 255 235 235 255),
-               (4,    makeColor8 255 200 200 255),
-               (8,    makeColor8 255 170 170 255),
-               (16,   makeColor8 255 140 140 255),
-               (32,   makeColor8 255 110 110 255),
-               (64,   makeColor8 255  80  80 255),
-               (128,  makeColor8 255 230  90 255),
-               (256,  makeColor8 255 230  90 255),
-               (512,  makeColor8 255 230  90 255),
-               (1024, makeColor8 255 230  90 255),
-               (2048, makeColor8 255 235  90 255)]
+colorZipper = [(2,    makeColor8 238 228 218 255),
+               (4,    makeColor8 237 224 200 255),
+               (8,    makeColor8 242 177 121 255),
+               (16,   makeColor8 245 149  99 255),
+               (32,   makeColor8 246 124  95 255),
+               (64,   makeColor8 246 102  62 255),
+               (128,  makeColor8 238 208 114 255),
+               (256,  makeColor8 237 204  97 255),
+               (512,  makeColor8 237 200  80 255),
+               (1024, makeColor8 237 197  63 255),
+               (2048, makeColor8 237 194  46 255)]
 
 getColorUnsafe :: Int -> Maybe Color
 getColorUnsafe x = lookup x colorZipper 
