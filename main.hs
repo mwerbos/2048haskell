@@ -115,13 +115,15 @@ handleInputEvents  _ x = x
 -- Time steps: All they do is update the animations   --
 -- -----------------------------------------------------
 
-popInSpeed = 2
-popOutSpeed = 1
+popInSpeed = 4
+popOutSpeed = 0.5
 
 -- changes animation times for each tile
 updateTile :: Float -> Tile -> Tile
-updateTile dt t = t {popInTime = if popInTime t - dt*popInSpeed > 0 then popInTime t - dt*popInSpeed else 0,
+updateTile dt t = if val t > 0 then
+                    t {popInTime = if popInTime t - dt*popInSpeed > 0 then popInTime t - dt*popInSpeed else 0,
                      popOutTime = if popOutTime t - dt*popInSpeed > 0 then popOutTime t - dt*popInSpeed else 0}
+                  else t {popInTime = 0, popOutTime = 0}
 
 updateTiles :: Float -> [[Tile]] -> [[Tile]]
 updateTiles dt tss = (map (map (updateTile dt))) tss
@@ -195,8 +197,6 @@ drawRow [i,j,k,l] = translate (-300) 0 (pictures [ drawTile 0 i,
 -- Board handling (moving and stuff)      --
 --------------------------------------------
 
-
-
 scootLambda :: Tile -> [Tile] -> [Tile]
 scootLambda y [] = [y]
 scootLambda y [x] = if val x == 0 then [x,y] else [y,x] -- TODO add animations
@@ -227,17 +227,17 @@ scoot (Just D) = transpose . scootRight . transpose
 
 comboLambda :: Tile -> [Tile] -> [Tile]
 comboLambda y [] = [y]
-comboLambda y [x] = if val x == val y 
-                    then [makeTile 0,Tile {val=val x + val y, popOutTime = 0.1, popInTime = 0}] 
-                    else [y,x] -- TODO animations
-comboLambda y (x:xs) = if val x == val y then (makeTile 0):(makeTile $ val x+val y):xs else y:x:xs
+comboLambda y (x:xs) = if val x == val y && val x > 0
+                       then (makeTile 0):(Tile {val=val x + val y, popOutTime = 0.1, popInTime = 0}):xs
+                       else y:x:xs -- TODO animations
+-- comboLambda y (x:xs) = if val x == val y then (makeTile 0):(makeTile $ val x+val y):xs else y:x:xs
 
--- Takes a row and scoots all numbers through zeroes *once*
--- Example: [2,0,0,2] -> [0,2,0,2] and [0,2,0,2] -> [0,0,2,2]
+-- Takes a row and does combos to the right on all numbers *once*
+-- Example: [2,2,0,0] -> [0,4,0,0] and [2,2,2,2] -> [0,4,0,4] 
 comboRowRight :: [Tile] -> [Tile]
 comboRowRight = foldr comboLambda []
 
--- scoots whole board
+-- does combos on whole board
 comboRight :: [[Tile]] -> [[Tile]]
 comboRight = map comboRowRight
 
