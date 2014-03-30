@@ -34,7 +34,7 @@ fps = 20
 -- type World = ([[Int]],StdGen) -- also stores random number generator to help with some stuff
 data Tile = Tile { val :: Int, popInTime :: Float, popOutTime :: Float} deriving (Eq,Show)
 type Row = [Tile]
-data World = World {board :: [[Tile]], gen :: StdGen}
+data World = World {board :: [[Tile]], gen :: StdGen, score :: Int}
 
 --------------------------------------------
 -- Utils for world generation and updating
@@ -68,7 +68,7 @@ initPositions :: StdGen -> World
 -- This is a really cool line of code but sadly it is no longer useful.
 -- initPositions gen = let board = chunksOf 4 $ map ((*2) . toInt . (== 0) . (`mod` 4)) $ take 16 $ (randoms gen :: [Int]) in (board,gen)
 initPositions g = let origBoard = chunksOf 4 $ map makeTile $ replicate 16 0
-                    in addTwo $ addTwo World {board=origBoard,gen=g}
+                    in addTwo $ addTwo World {board=origBoard,gen=g,score=0}
 
 --------------------------------------------
 -- Regeneration of 2s
@@ -138,11 +138,11 @@ stepWorld dt world = world {board=updateTiles dt (board world)}
 rowHgt = 100
 
 drawWorld :: World -> Picture
-drawWorld World {board = [r1, r2, r3, r4]} = translate (150) (150) (pictures [ drawRow r1, 
+drawWorld World {board = [r1, r2, r3, r4], score=s} = translate (150) (150) (pictures [ drawRow r1, 
                                         translate 0 (-rowHgt) (drawRow r2),
                                         translate 0 (-rowHgt*2) (drawRow r3),
-                                        translate 0 (-rowHgt*3) (drawRow r4)
-                                      ])
+                                        translate 0 (-rowHgt*3) (drawRow r4),
+                                        translate (-100) 60 $ scale 0.2 0.2 $ color white $ text $ "Score: " ++ (show s) ])
 
 tileS = 90
 textScale = 0.2
@@ -178,8 +178,9 @@ drawTileBack x = color white (translate x 0 (rectangleSolid tileS tileS))
 -- Takes x-offset and tile and draws the tile itself
 drawTile :: Float -> Tile -> Picture
 drawTile x tile = let background = [color (getColor $ val tile) $ rectangleSolid tileS tileS]
-                      number = if val tile > 0 then [scale textScale textScale $ text $ show $ val tile]
-                                        else []
+                      number = if val tile > 0 
+                               then [translate (-10) (-10) $ scale textScale textScale $ text $ show $ val tile]
+                               else []
                       curScale = if (popInTime tile) > 0
                                  then (1-(popInTime tile))
                                  else (1+(popOutTime tile))
@@ -224,6 +225,8 @@ scoot (Just D) = transpose . scootRight . transpose
 --------------------------------------------
 -- Comboing (TODO: REFACTOR)              --
 --------------------------------------------
+
+-- Crap, refactoring this to put the score in is going to be annoying.
 
 comboLambda :: Tile -> [Tile] -> [Tile]
 comboLambda y [] = [y]
