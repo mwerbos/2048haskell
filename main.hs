@@ -14,7 +14,7 @@ import Control.Lens (set,element)
 --make 4s spawn sometimes
 -------------------------------------------
 
-main = 
+main =
   do
     g <- getStdGen
     play
@@ -76,10 +76,10 @@ initPositions g = let origBoard = chunksOf 4 $ map makeTile $ replicate 16 0
 
 makeNthZeroTwo :: Int -> [Tile] -> [Tile]
 makeNthZeroTwo _ [] = []
-makeNthZeroTwo 0 (x:xs) = if val x == 0 
+makeNthZeroTwo 0 (x:xs) = if val x == 0
                           then (Tile {val=2, popInTime = 0.5, popOutTime = 0.0}:xs)
                           else x:(makeNthZeroTwo 0 xs)
-makeNthZeroTwo n (x:xs) = if val x == 0 then x:(makeNthZeroTwo (n-1) xs) 
+makeNthZeroTwo n (x:xs) = if val x == 0 then x:(makeNthZeroTwo (n-1) xs)
                                   else x:(makeNthZeroTwo n xs)
 
 addTwo :: World -> World
@@ -138,7 +138,7 @@ stepWorld dt world = world {board=updateTiles dt (board world)}
 rowHgt = 100
 
 drawWorld :: World -> Picture
-drawWorld World {board = [r1, r2, r3, r4], score=s} = translate (150) (150) (pictures [ drawRow r1, 
+drawWorld World {board = [r1, r2, r3, r4], score=s} = translate (150) (150) (pictures [ drawRow r1,
                                         translate 0 (-rowHgt) (drawRow r2),
                                         translate 0 (-rowHgt*2) (drawRow r3),
                                         translate 0 (-rowHgt*3) (drawRow r4),
@@ -146,6 +146,8 @@ drawWorld World {board = [r1, r2, r3, r4], score=s} = translate (150) (150) (pic
 
 tileS = 90
 textScale = 0.2
+
+-- TODO: also make a zipper to *pictures* to also adjust number position, text color, etc. by number
 
 colorZipper :: [(Int, Color)]
 colorZipper = [(2,    makeColor8 238 228 218 255),
@@ -161,7 +163,7 @@ colorZipper = [(2,    makeColor8 238 228 218 255),
                (2048, makeColor8 237 194  46 255)]
 
 getColorUnsafe :: Int -> Maybe Color
-getColorUnsafe x = lookup x colorZipper 
+getColorUnsafe x = lookup x colorZipper
 
 convertColor :: Maybe Color -> Color
 convertColor (Just c) = c
@@ -178,18 +180,18 @@ drawTileBack x = color white (translate x 0 (rectangleSolid tileS tileS))
 -- Takes x-offset and tile and draws the tile itself
 drawTile :: Float -> Tile -> Picture
 drawTile x tile = let background = [color (getColor $ val tile) $ rectangleSolid tileS tileS]
-                      number = if val tile > 0 
-                               then [translate (-10) (-10) $ scale textScale textScale $ text $ show $ val tile]
+                      number = if val tile > 0
+                               then [translate (-20) (-10) $ scale textScale textScale $ text $ show $ val tile]
                                else []
                       curScale = if (popInTime tile) > 0
                                  then (1-(popInTime tile))
                                  else (1+(popOutTime tile))
-                  in pictures 
+                  in pictures
                      [ drawTileBack x,
                        translate x 0 $ scale curScale curScale $ pictures $ background ++ number]
 
 drawRow :: Row -> Picture
-drawRow [i,j,k,l] = translate (-300) 0 (pictures [ drawTile 0 i, 
+drawRow [i,j,k,l] = translate (-300) 0 (pictures [ drawTile 0 i,
                                                    drawTile rowHgt j,
                                                    drawTile (rowHgt*2) k,
                                                    drawTile (rowHgt*3) l ])
@@ -236,7 +238,7 @@ comboLambda y (x:xs) = if val x == val y && val x > 0
 -- comboLambda y (x:xs) = if val x == val y then (makeTile 0):(makeTile $ val x+val y):xs else y:x:xs
 
 -- Takes a row and does combos to the right on all numbers *once*
--- Example: [2,2,0,0] -> [0,4,0,0] and [2,2,2,2] -> [0,4,0,4] 
+-- Example: [2,2,0,0] -> [0,4,0,0] and [2,2,2,2] -> [0,4,0,4]
 comboRowRight :: [Tile] -> [Tile]
 comboRowRight = foldr comboLambda []
 
