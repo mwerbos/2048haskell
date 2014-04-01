@@ -25,7 +25,7 @@ homepage:            https://github.com/tigrennatenn/2048haskell
 license:             MIT
 
 -- The file containing the license text.
-license-file:        LICENSE
+license-file:        LICENSE.md
 
 -- The package author(s).
 author:              Maia Werbos
