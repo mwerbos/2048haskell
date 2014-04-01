@@ -33,7 +33,6 @@ main =
 
 fps = 20
 
--- type World = ([[Int]],StdGen) -- also stores random number generator to help with some stuff
 data Tile = Tile { val :: Int, popInTime :: Float, popOutTime :: Float} deriving (Eq,Show)
 type Row = [Tile]
 data World = World {board :: [[Tile]], gen :: StdGen, score :: Int}
@@ -70,8 +69,6 @@ makeTile i = Tile {val=i, popInTime=0.0, popOutTime=0.0}
 
 -- generates an initial world state with, on average, two 2s to start
 initPositions :: StdGen -> World
--- This is a really cool line of code but sadly it is no longer useful.
--- initPositions gen = let board = chunksOf 4 $ map ((*2) . toInt . (== 0) . (`mod` 4)) $ take 16 $ (randoms gen :: [Int]) in (board,gen)
 initPositions g = let origBoard = chunksOf 4 $ map makeTile $ replicate 16 0
                     in addTile $ addTile World {board=origBoard,gen=g,score=0}
 
@@ -114,7 +111,6 @@ keyDir _ = Nothing
 handleInputEvents :: Event -> World -> World
 handleInputEvents (EventKey k Down _ _) world = let dir = keyDir k
                                                     newWorld = go dir world
-                                       -- NOTE watch out if it's testing equality of popin and popout times??
                                                 in if newWorld == world
                                                    then world
                                                    else addTile newWorld
@@ -280,14 +276,11 @@ scoot (Just D) = transpose . scootRight . transpose
 -- Comboing (TODO: REFACTOR)              --
 --------------------------------------------
 
--- Crap, refactoring this to put the score in is going to be annoying.
-
 comboLambda :: Tile -> ([Tile],Int) -> ([Tile],Int)
 comboLambda y ([],s) = ([y],s)
 comboLambda y ((x:xs),s) = if val x == val y && val x > 0
                        then ((makeTile 0):(Tile {val=val x + val y, popOutTime = 0.1, popInTime = 0}):xs, s+val x+val y)
                        else (y:x:xs,s)
--- comboLambda y (x:xs) = if val x == val y then (makeTile 0):(makeTile $ val x+val y):xs else y:x:xs
 
 -- Takes a row and does combos to the right on all numbers *once*
 -- Example: [2,2,0,0] -> [0,4,0,0] and [2,2,2,2] -> [0,4,0,4]
@@ -306,8 +299,6 @@ combo (Just R) = comboRight
 combo (Just U) = (toWorldFunc $ reverse . transpose) . comboRight . (toWorldFunc $ transpose . reverse)
 combo (Just L) = (toWorldFunc $ transpose . reverse . transpose) . comboRight . (toWorldFunc $ transpose . reverse . transpose)
 combo (Just D) = (toWorldFunc transpose) . comboRight . (toWorldFunc transpose)
-
--- !! Now actually go in the direction!!
 
 go :: Maybe Direction -> World -> World
 go dir = (toWorldFunc $ scoot dir) . (combo dir) . (toWorldFunc $ scoot dir)
