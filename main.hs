@@ -36,6 +36,9 @@ data Tile = Tile { val :: Int, popInTime :: Float, popOutTime :: Float} deriving
 type Row = [Tile]
 data World = World {board :: [[Tile]], gen :: StdGen, score :: Int}
 
+instance Eq World where
+    x == y = board x == board y && score x == score y
+
 --------------------------------------------
 -- Utils for world generation and updating
 --------------------------------------------
@@ -104,11 +107,11 @@ keyDir _ = Nothing
 
 handleInputEvents :: Event -> World -> World
 handleInputEvents (EventKey k Down _ _) world = let dir = keyDir k
-                                                    newBoard = go dir (board world)
+                                                    newWorld = go dir world
                                        -- NOTE watch out if it's testing equality of popin and popout times??
-                                                in if newBoard == (board world)
-                                                   then world {board=newBoard}
-                                                   else addTwo world {board=newBoard}
+                                                in if newWorld == world
+                                                   then world
+                                                   else addTwo newWorld
 handleInputEvents  _ x = x
 
 --------------------------------------------------------
@@ -142,7 +145,7 @@ drawWorld World {board = [r1, r2, r3, r4], score=s} = translate (150) (150) (pic
                                         translate 0 (-rowHgt) (drawRow r2),
                                         translate 0 (-rowHgt*2) (drawRow r3),
                                         translate 0 (-rowHgt*3) (drawRow r4),
-                                        translate (-100) 60 $ scale 0.2 0.2 $ color white $ text $ "Score: " ++ (show s) ])
+                                        translate (-300) 60 $ scale 0.2 0.2 $ color white $ text $ "Score: " ++ (show s) ])
 
 tileS = 90
 textScale = 0.2
@@ -200,6 +203,9 @@ drawRow [i,j,k,l] = translate (-300) 0 (pictures [ drawTile 0 i,
 -- Board handling (moving and stuff)      --
 --------------------------------------------
 
+toWorldFunc :: ([[Tile]]->[[Tile]]) -> World -> World
+toWorldFunc tf w = w {board = tf (board w)}
+
 scootLambda :: Tile -> [Tile] -> [Tile]
 scootLambda y [] = [y]
 scootLambda y [x] = if val x == 0 then [x,y] else [y,x] -- TODO add animations
@@ -230,30 +236,32 @@ scoot (Just D) = transpose . scootRight . transpose
 
 -- Crap, refactoring this to put the score in is going to be annoying.
 
-comboLambda :: Tile -> [Tile] -> [Tile]
-comboLambda y [] = [y]
-comboLambda y (x:xs) = if val x == val y && val x > 0
-                       then (makeTile 0):(Tile {val=val x + val y, popOutTime = 0.1, popInTime = 0}):xs
-                       else y:x:xs -- TODO animations
+comboLambda :: Tile -> ([Tile],Int) -> ([Tile],Int)
+comboLambda y ([],s) = ([y],s)
+comboLambda y ((x:xs),s) = if val x == val y && val x > 0
+                       then ((makeTile 0):(Tile {val=val x + val y, popOutTime = 0.1, popInTime = 0}):xs, s+val x+val y)
+                       else (y:x:xs,s)
 -- comboLambda y (x:xs) = if val x == val y then (makeTile 0):(makeTile $ val x+val y):xs else y:x:xs
 
 -- Takes a row and does combos to the right on all numbers *once*
 -- Example: [2,2,0,0] -> [0,4,0,0] and [2,2,2,2] -> [0,4,0,4]
-comboRowRight :: [Tile] -> [Tile]
-comboRowRight = foldr comboLambda []
+comboRowRight :: [Tile] -> ([Tile],Int)
+comboRowRight = foldr comboLambda ([],0)
 
 -- does combos on whole board
-comboRight :: [[Tile]] -> [[Tile]]
-comboRight = map comboRowRight
+comboRight :: World -> World
+-- map (comboRowRight w) (board w) => [([Tile],Int)]
+comboRight w = let (newBoard, scores) = unzip $ map comboRowRight (board w)
+               in w {board = newBoard, score = sum scores + score w}
 
-combo :: Maybe Direction -> [[Tile]] -> [[Tile]]
+combo :: Maybe Direction -> World -> World
 combo Nothing = id
 combo (Just R) = comboRight
-combo (Just U) = reverse . transpose . comboRight . transpose . reverse
-combo (Just L) = transpose . reverse . transpose . comboRight . transpose . reverse . transpose
-combo (Just D) = transpose . comboRight . transpose
+combo (Just U) = (toWorldFunc $ reverse . transpose) . comboRight . (toWorldFunc $ transpose . reverse)
+combo (Just L) = (toWorldFunc $ transpose . reverse . transpose) . comboRight . (toWorldFunc $ transpose . reverse . transpose)
+combo (Just D) = (toWorldFunc transpose) . comboRight . (toWorldFunc transpose)
 
 -- !! Now actually go in the direction!!
 
-go :: Maybe Direction -> [[Tile]] -> [[Tile]]
-go dir = (scoot dir) . (combo dir) . (scoot dir)
+go :: Maybe Direction -> World -> World
+go dir = (toWorldFunc $ scoot dir) . (combo dir) . (toWorldFunc $ scoot dir)
