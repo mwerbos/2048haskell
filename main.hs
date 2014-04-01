@@ -1,3 +1,6 @@
+module Main (main)
+where
+
 import Graphics.Gloss
 import Graphics.Gloss.Data.Color
 import Graphics.Gloss.Interface.IO.Game
@@ -143,12 +146,19 @@ stepWorld dt world = world {board=updateTiles dt (board world)}
 
 rowHgt = 100
 
+debugPicture = pictures [
+                         translate (-200) (-200) $ color cyan $ drawQuarterRoundedRect 10 300 300 30,
+                         translate (-200) (-200) $ color blue $ outlineQuarterRoundedRect 10 300 300 30,
+                         translate (-200) (-200) $ color red $ roundedRect 10 90 90 10
+                        ]
+
 drawWorld :: World -> Picture
 drawWorld World {board = [r1, r2, r3, r4], score=s} = translate (150) (150) (pictures [ drawRow r1,
                                         translate 0 (-rowHgt) (drawRow r2),
                                         translate 0 (-rowHgt*2) (drawRow r3),
                                         translate 0 (-rowHgt*3) (drawRow r4),
-                                        translate (-300) 60 $ scale 0.2 0.2 $ color white $ text $ "Score: " ++ (show s) ])
+                                        translate (-300) 60 $ scale 0.2 0.2 $ color white $ text $ "Score: " ++ (show s) ]) --,
+                                        --debugPicture ])
 
 tileS = 90
 textScale = 0.2
@@ -178,14 +188,46 @@ convertColor Nothing = makeColor8 255 255 255 255
 getColor :: Int -> Color
 getColor x = convertColor (getColorUnsafe x)
 
+quarterRoundedRect :: Int -> Float -> Float -> Float -> Path
+quarterRoundedRect n w h r = [(0,0), (0,h/2)] ++
+                              (reverse $ arcPath n (w/2-r,h/2-r) r) ++
+                              [(w/2,0)]
+
+drawQuarterRoundedRect :: Int -> Float -> Float -> Float -> Picture
+drawQuarterRoundedRect n w h r = polygon $ quarterRoundedRect n w h r
+
+outlineQuarterRoundedRect :: Int -> Float -> Float -> Float -> Picture
+outlineQuarterRoundedRect n w h r = line $ quarterRoundedRect n w h r
+
+
+-- takes width and height and radius and makes a filled rounded rectangle
+-- the int is the precision / number of points
+roundedRect :: Int -> Float -> Float -> Float -> Picture
+roundedRect n w h r = pictures [
+                                drawQuarterRoundedRect n w h r,
+                                rotate 90 $ drawQuarterRoundedRect n w h r,
+                                rotate 180 $ drawQuarterRoundedRect n w h r,
+                                rotate 270 $ drawQuarterRoundedRect n w h r]
+
+-- takes x, y, r, and theta and returns (x+r*cos theta, y+r*sin theta)
+getPoint :: Float -> Float -> Float -> Float -> (Float,Float)
+getPoint x y r th = (x+r*cos th, y+r*sin th)
+
+-- takes center and radius and returns 90-degree arc path with n points
+arcPath :: Int -> (Float,Float) -> Float -> Path
+arcPath n (x,y) r = map (getPoint x y r) $ [0.0] ++ (map (\x-> pi/2/(fromIntegral x)) $ reverse [1..n+1] )
+
+tileRoundness = 4
+tilePrecision = 10
+
 -- Takes x-offset and draws the tile background
 -- maybe unroll this into drawTile?
 drawTileBack :: Float -> Picture
-drawTileBack x = color white (translate x 0 (rectangleSolid tileS tileS))
+drawTileBack x = color white (translate x 0 (roundedRect tilePrecision tileS tileS tileRoundness))
 
 -- Takes x-offset and tile and draws the tile itself
 drawTile :: Float -> Tile -> Picture
-drawTile x tile = let background = [color (getColor $ val tile) $ rectangleSolid tileS tileS]
+drawTile x tile = let background = [color (getColor $ val tile) $ roundedRect tilePrecision tileS tileS tileRoundness]
                       number = if val tile > 0
                                then [translate (-20) (-10) $ scale textScale textScale $ text $ show $ val tile]
                                else []
