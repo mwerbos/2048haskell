@@ -24,7 +24,7 @@ main =
          (410,500)
          (20,20)
       )
-      black -- background color
+      (makeColor8 193 177 156 255) -- background color
       fps -- simulation steps per second
       (initPositions g) -- initial world
       drawWorld -- function to convert world to picture
@@ -222,8 +222,9 @@ tilePrecision = 10
 
 -- Takes x-offset and draws the tile background
 -- maybe unroll this into drawTile?
+tileBackColor = makeColor8 205 192 180 255
 drawTileBack :: Float -> Picture
-drawTileBack x = color white (translate x 0 (roundedRect tilePrecision tileS tileS tileRoundness))
+drawTileBack x = color tileBackColor (translate x 0 (roundedRect tilePrecision tileS tileS tileRoundness))
 
 -- Takes x-offset and tile and draws the tile itself
 drawTile :: Float -> Tile -> Picture
