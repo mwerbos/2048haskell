@@ -9,9 +9,8 @@ import Control.Lens (set,element)
 --------------------------------------------
 --TODO:
 --loss detection
---scoring
---animations (major!)
---make 4s spawn sometimes
+--movement animations
+--aesthetic improvements
 -------------------------------------------
 
 main =
@@ -71,25 +70,29 @@ initPositions :: StdGen -> World
 -- This is a really cool line of code but sadly it is no longer useful.
 -- initPositions gen = let board = chunksOf 4 $ map ((*2) . toInt . (== 0) . (`mod` 4)) $ take 16 $ (randoms gen :: [Int]) in (board,gen)
 initPositions g = let origBoard = chunksOf 4 $ map makeTile $ replicate 16 0
-                    in addTwo $ addTwo World {board=origBoard,gen=g,score=0}
+                    in addTile $ addTile World {board=origBoard,gen=g,score=0}
 
 --------------------------------------------
 -- Regeneration of 2s
 --------------------------------------------
 
-makeNthZeroTwo :: Int -> [Tile] -> [Tile]
-makeNthZeroTwo _ [] = []
-makeNthZeroTwo 0 (x:xs) = if val x == 0
-                          then (Tile {val=2, popInTime = 0.5, popOutTime = 0.0}:xs)
-                          else x:(makeNthZeroTwo 0 xs)
-makeNthZeroTwo n (x:xs) = if val x == 0 then x:(makeNthZeroTwo (n-1) xs)
-                                  else x:(makeNthZeroTwo n xs)
+replaceNthZero :: Int -> Int -> [Tile] -> [Tile]
+replaceNthZero v _ [] = []
+replaceNthZero v 0 (x:xs) = if val x == 0
+                          then (Tile {val=v, popInTime = 0.5, popOutTime = 0.0}:xs)
+                          else x:(replaceNthZero v 0 xs)
+replaceNthZero v n (x:xs) = if val x == 0 then x:(replaceNthZero v (n-1) xs)
+                                  else x:(replaceNthZero v n xs)
 
-addTwo :: World -> World
-addTwo world = let numZeros = (sum . (map toInt) . (map (==0)) . map val . concat) (board world)
-                   (rand, newGen) = random (gen world) :: (Int, StdGen)
-                   n = if numZeros == 0 then 0 else rand `mod` numZeros
-                   newBoard = chunksOf 4 $ makeNthZeroTwo n $ concat (board world)
+reciprocalOddsOf4 = 10
+
+addTile :: World -> World
+addTile world = let numZeros = (sum . (map toInt) . (map (==0)) . map val . concat) (board world)
+                    (rand, newGen) = random (gen world) :: (Int, StdGen)
+                    n = if numZeros == 0 then 0 else rand `mod` numZeros
+                    (rand2, newGen2) = random newGen :: (Int, StdGen)
+                    v = if rand2 `mod` reciprocalOddsOf4 == 0 then 4 else 2
+                    newBoard = chunksOf 4 $ replaceNthZero v n $ concat (board world)
                 in world {board=newBoard, gen=newGen}
 
 ---------------------------------------------
@@ -111,7 +114,7 @@ handleInputEvents (EventKey k Down _ _) world = let dir = keyDir k
                                        -- NOTE watch out if it's testing equality of popin and popout times??
                                                 in if newWorld == world
                                                    then world
-                                                   else addTwo newWorld
+                                                   else addTile newWorld
 handleInputEvents  _ x = x
 
 --------------------------------------------------------
