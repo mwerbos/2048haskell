@@ -142,12 +142,6 @@ stepWorld dt world = world {board=updateTiles dt (board world)}
 
 rowHgt = 100
 
-debugPicture = pictures [
-                         translate (-200) (-200) $ color cyan $ drawQuarterRoundedRect 10 300 300 30,
-                         translate (-200) (-200) $ color blue $ outlineQuarterRoundedRect 10 300 300 30,
-                         translate (-200) (-200) $ color red $ roundedRect 10 90 90 10
-                        ]
-
 drawWorld :: World -> Picture
 drawWorld World {board = [r1, r2, r3, r4], score=s} = translate (150) (150) (pictures [ drawRow r1,
                                         translate 0 (-rowHgt) (drawRow r2),
@@ -174,15 +168,8 @@ colorZipper = [(2,    makeColor8 238 228 218 255),
                (1024, makeColor8 237 197  63 255),
                (2048, makeColor8 237 194  46 255)]
 
-getColorUnsafe :: Int -> Maybe Color
-getColorUnsafe x = lookup x colorZipper
-
-convertColor :: Maybe Color -> Color
-convertColor (Just c) = c
-convertColor Nothing = makeColor8 255 255 255 255
-
 getColor :: Int -> Color
-getColor x = convertColor (getColorUnsafe x)
+getColor x = maybe white id (lookup x colorZipper)
 
 quarterRoundedRect :: Int -> Float -> Float -> Float -> Path
 quarterRoundedRect n w h r = [(0,0), (0,h/2)] ++
