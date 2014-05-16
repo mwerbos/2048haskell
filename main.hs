@@ -142,12 +142,21 @@ stepWorld dt world = world {board=updateTiles dt (board world)}
 
 rowHgt = 100
 
+gameOverMessage :: Picture
+gameOverMessage = pictures [
+                  translate (-500) (-500) $ color translucentWhite $ rectangleSolid 2000 2000,
+                  translate (-335) (-150) $ scale 0.5 0.5 $ color black $ text "Game Over"
+                  ]
+                  where translucentWhite = makeColor8 255 255 255 150
+
 drawWorld :: World -> Picture
-drawWorld World {board = [r1, r2, r3, r4], score=s} = translate (150) (150) (pictures [ drawRow r1,
+drawWorld World {board = [r1, r2, r3, r4], score=s} = translate (150) (150) (pictures [ 
+                                        drawRow r1,
                                         translate 0 (-rowHgt) (drawRow r2),
                                         translate 0 (-rowHgt*2) (drawRow r3),
                                         translate 0 (-rowHgt*3) (drawRow r4),
-                                        translate (-300) 60 $ scale 0.2 0.2 $ color white $ text $ "Score: " ++ (show s) ]) --,
+                                        translate (-300) 60 $ scale 0.2 0.2 $ color white $ text $ "Score: " ++ (show s)
+                                        ])
                                         --debugPicture ])
 
 tileS = 90
