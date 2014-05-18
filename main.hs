@@ -35,7 +35,7 @@ fps = 20
 
 data Tile = Tile { val :: Int, popInTime :: Float, popOutTime :: Float} deriving (Eq,Show)
 type Row = [Tile]
-data World = World {board :: [[Tile]], gen :: StdGen, score :: Int}
+data World = World {board :: [[Tile]], gen :: StdGen, score :: Int }
 
 instance Eq World where
     x == y = board x == board y && score x == score y
@@ -70,7 +70,7 @@ makeTile i = Tile {val=i, popInTime=0.0, popOutTime=0.0}
 -- generates an initial world state with, on average, two 2s to start
 initPositions :: StdGen -> World
 initPositions g = let origBoard = chunksOf 4 $ map makeTile $ replicate 16 0
-                    in addTile $ addTile World {board=origBoard,gen=g,score=0}
+                    in addTile $ addTile World {board=origBoard,gen=g,score=0 }
 
 --------------------------------------------
 -- Regeneration of 2s
@@ -150,13 +150,17 @@ gameOverMessage = pictures [
                   where translucentWhite = makeColor8 255 255 255 150
 
 drawWorld :: World -> Picture
-drawWorld World {board = [r1, r2, r3, r4], score=s} = translate (150) (150) (pictures [ 
+drawWorld w@World {board = [r1, r2, r3, r4], score=s} = translate (150) (150) $ pictures $ [ 
                                         drawRow r1,
                                         translate 0 (-rowHgt) (drawRow r2),
                                         translate 0 (-rowHgt*2) (drawRow r3),
                                         translate 0 (-rowHgt*3) (drawRow r4),
                                         translate (-300) 60 $ scale 0.2 0.2 $ color white $ text $ "Score: " ++ (show s)
-                                        ])
+                                        ] ++ gameOverPicture
+                                        where gameOverPicture = if lost then [gameOverMessage] else []
+                                              lost = go (Just R) w == w && go (Just L) w == w 
+                                                      && go (Just U) w == w && go (Just D) w == w
+
                                         --debugPicture ])
 
 tileS = 90
